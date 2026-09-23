@@ -21,6 +21,7 @@ services:
       - cpm-data:/data
     ports:
       - "127.0.0.1:8000:8000"
+      - "127.0.0.1:6080:6080"
     restart: unless-stopped
 
 volumes:

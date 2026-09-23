@@ -16,9 +16,13 @@ RUN npm run build
 
 FROM python:3.12-slim
 
-# Install system dependencies required for Xvfb and Camoufox/Firefox
+# Install system dependencies required for Xvfb, Camoufox/Firefox, and remote visual display (noVNC)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
+    x11vnc \
+    novnc \
+    websockify \
+    openbox \
     libgtk-3-0 \
     libasound2 \
     libx11-xcb1 \
@@ -44,12 +48,18 @@ RUN uv run camoufox fetch
 # The static export, where the package looks for it when no CPM_WEBUI_DIR is set.
 COPY --from=webui /web/out ./src/camoufox_pm/webui
 
+COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 ENV CPM_HOST=0.0.0.0 \
     CPM_PORT=8000 \
-    CPM_DB_PATH=/data/profiles.db
+    CPM_DB_PATH=/data/profiles.db \
+    DISPLAY=:99
 
 VOLUME ["/data"]
-EXPOSE 8000
+EXPOSE 8000 6080
+
+ENTRYPOINT ["docker-entrypoint.sh"]
 
 # The console script, so the container runs the same entry point as a local
 # install rather than a second, drifting invocation of uvicorn.
