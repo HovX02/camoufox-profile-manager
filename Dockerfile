@@ -16,6 +16,18 @@ RUN npm run build
 
 FROM python:3.12-slim
 
+# Install system dependencies required for Xvfb and Camoufox/Firefox
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    xvfb \
+    libgtk-3-0 \
+    libasound2 \
+    libx11-xcb1 \
+    libdbus-glib-1-2 \
+    libxt6 \
+    libpci3 \
+    procps \
+    && rm -rf /var/lib/apt/lists/*
+
 # uv for fast, reproducible installs.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
@@ -25,6 +37,9 @@ WORKDIR /app
 COPY pyproject.toml uv.lock README.md ./
 COPY src ./src
 RUN uv sync --no-dev --frozen
+
+# Pre-fetch the Camoufox browser binary and required assets
+RUN uv run camoufox fetch
 
 # The static export, where the package looks for it when no CPM_WEBUI_DIR is set.
 COPY --from=webui /web/out ./src/camoufox_pm/webui
