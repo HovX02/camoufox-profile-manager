@@ -209,6 +209,14 @@ yourdomain.com {
 ```
 *(Caddy proxies WebSockets automatically).*
 
+#### Troubleshooting noVNC / Live Screen Connection Errors (e.g. Code 1006)
+
+If live screen viewing shows **Connection closed (code: 1006)** on a VPS, verify the following:
+
+1. **VNC Server running:** Ensure `Xvfb` and `x11vnc` are installed and running on port `5900` (this is configured automatically inside Docker via `DISPLAY=:99`). If running natively on a bare VPS, install `x11vnc`, `novnc`, and `xvfb`, then run `x11vnc -display :99 -forever -shared -nopw -rfbport 5900 -bg`.
+2. **Reverse proxy WebSocket headers:** Ensure your reverse proxy passes `Upgrade` and `Connection "upgrade"` headers for `/vnc/ws`. Missing headers cause the reverse proxy to refuse WebSocket upgrade requests.
+3. **noVNC package:** Verify `novnc` is installed (e.g., `apt install novnc`) so `/usr/share/novnc` exists on the host.
+
 ### Running more than one instance
 
 Two instances against one database — the web UI and a CLI launch on the same

@@ -190,23 +190,34 @@ async def vnc_websocket_proxy(websocket: WebSocket):
 
     reader, writer = None, None
     for _ in range(5):
-        try:
-            reader, writer = await asyncio.open_connection("127.0.0.1", 5900)
+        for host in ("127.0.0.1", "localhost"):
+            try:
+                reader, writer = await asyncio.open_connection(host, 5900)
+                break
+            except (ConnectionRefusedError, OSError):
+                continue
+        if reader is not None and writer is not None:
             break
-        except (ConnectionRefusedError, OSError):
-            await asyncio.sleep(0.5)
+        await asyncio.sleep(0.5)
 
     if reader is None or writer is None:
         logger.warning("VNC WebSocket proxy could not connect to VNC server on 127.0.0.1:5900")
-        await websocket.close(code=1011)
+        await websocket.close(code=1011, reason="VNC server unreachable on 127.0.0.1:5900")
         return
 
     async def ws_to_tcp():
         try:
             while True:
-                data = await websocket.receive_bytes()
-                writer.write(data)
-                await writer.drain()
+                message = await websocket.receive()
+                if message["type"] == "websocket.disconnect":
+                    break
+                bytes_data = message.get("bytes")
+                if bytes_data:
+                    writer.write(bytes_data)
+                    await writer.drain()
+                elif message.get("text"):
+                    writer.write(message["text"].encode("utf-8"))
+                    await writer.drain()
         except Exception:
             pass
 
