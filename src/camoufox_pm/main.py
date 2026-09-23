@@ -184,11 +184,20 @@ async def health_check():
 @app.websocket("/vnc/ws")
 async def vnc_websocket_proxy(websocket: WebSocket):
     """Bridge noVNC WebSocket connection to the local x11vnc server on port 5900."""
-    await websocket.accept()
-    try:
-        reader, writer = await asyncio.open_connection("127.0.0.1", 5900)
-    except Exception as exc:
-        logger.warning(f"VNC WebSocket proxy could not connect to VNC server: {exc}")
+    subprotocol = websocket.headers.get("sec-websocket-protocol")
+    selected_subprotocol = subprotocol.split(",")[0].strip() if subprotocol else None
+    await websocket.accept(subprotocol=selected_subprotocol)
+
+    reader, writer = None, None
+    for _ in range(5):
+        try:
+            reader, writer = await asyncio.open_connection("127.0.0.1", 5900)
+            break
+        except (ConnectionRefusedError, OSError):
+            await asyncio.sleep(0.5)
+
+    if reader is None or writer is None:
+        logger.warning("VNC WebSocket proxy could not connect to VNC server on 127.0.0.1:5900")
         await websocket.close(code=1011)
         return
 
