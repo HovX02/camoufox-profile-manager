@@ -330,3 +330,45 @@ async def test_refreshing_reads_the_operating_system_from_the_pin(profile_manage
         fingerprint_store.browser_major((await profile_manager.get_profile(profile.id)).fingerprint)
         == 141
     )
+
+
+@pytest.mark.asyncio
+async def test_launch_browser_virtual_display_fallback_on_headless_linux(
+    profile_manager, launches, monkeypatch
+):
+    """On Linux without DISPLAY set, launch_browser defaults headless to 'virtual'."""
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.delenv("DISPLAY", raising=False)
+
+    profile = await profile_manager.create_profile(name="p")
+    await profile_manager.launch_browser(profile.id, headless=False)
+
+    assert launches[0]["headless"] == "virtual"
+
+
+@pytest.mark.asyncio
+async def test_launch_browser_preserves_display_when_present(
+    profile_manager, launches, monkeypatch
+):
+    """When DISPLAY is set on Linux, headless=False stays False."""
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.setenv("DISPLAY", ":0")
+
+    profile = await profile_manager.create_profile(name="p")
+    await profile_manager.launch_browser(profile.id, headless=False)
+
+    assert launches[0]["headless"] is False
+
+
+@pytest.mark.asyncio
+async def test_launch_browser_preserves_explicit_headless_true(
+    profile_manager, launches, monkeypatch
+):
+    """When headless=True is passed on Linux, it remains True."""
+    monkeypatch.setattr("sys.platform", "linux")
+    monkeypatch.delenv("DISPLAY", raising=False)
+
+    profile = await profile_manager.create_profile(name="p")
+    await profile_manager.launch_browser(profile.id, headless=True)
+
+    assert launches[0]["headless"] is True

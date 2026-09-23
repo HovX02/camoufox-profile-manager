@@ -1,7 +1,9 @@
 """Browser profile manager."""
 
 import asyncio
+import os
 import shutil
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -820,7 +822,7 @@ class ProfileManager:
     async def launch_browser(
         self,
         profile_id: str,
-        headless: bool = False,
+        headless: bool | str = False,
         window_size: str | None = None,
         **kwargs: Any,
     ) -> dict[str, Any]:
@@ -872,6 +874,11 @@ class ProfileManager:
                 }
 
             options = profile.to_camoufox_launch_options()
+            # On Linux without a DISPLAY environment variable (e.g. VPS / Docker container),
+            # default non-headless launches fallback to virtual display (headless="virtual")
+            # so opening Camoufox doesn't fail with "no DISPLAY environment variable specified".
+            if headless is False and sys.platform.startswith("linux") and "DISPLAY" not in os.environ:
+                headless = "virtual"
             options["headless"] = headless
             if window_size:
                 # Camoufox expects a (width, height) tuple, not a "1280x720" string.
