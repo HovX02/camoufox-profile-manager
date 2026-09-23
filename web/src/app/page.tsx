@@ -948,7 +948,7 @@ export default function ProfilesPage() {
       >
         <div className="relative aspect-video w-full overflow-hidden rounded bg-black">
           <iframe
-            src="/vnc/vnc.html?path=vnc/ws&autoconnect=true&resize=remote&reconnect=true"
+            src="/vnc/vnc.html?path=/vnc/ws&autoconnect=true&resize=remote&reconnect=true"
             className="h-full w-full border-0"
             title="Live Screen Preview"
           />
