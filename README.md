@@ -183,6 +183,32 @@ User accounts for the web UI are managed from the CLI: `camoufox-pm user add
 <name>` creates one, and from then on the API and UI require a login (see
 [SECURITY.md](SECURITY.md#authentication)).
 
+### Running behind a reverse proxy (Nginx / Caddy / Cloudflare)
+
+When serving the application behind an HTTPS reverse proxy, ensure WebSockets are proxied with upgrade headers so live screen viewing (`/vnc/ws`) works smoothly:
+
+**Nginx:**
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8000;
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**Caddy:**
+```caddy
+yourdomain.com {
+    reverse_proxy 127.0.0.1:8000
+}
+```
+*(Caddy proxies WebSockets automatically).*
+
 ### Running more than one instance
 
 Two instances against one database — the web UI and a CLI launch on the same
