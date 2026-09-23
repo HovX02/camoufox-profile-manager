@@ -1,9 +1,10 @@
 """Camoufox Profile Manager REST API."""
 
+import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -178,6 +179,53 @@ async def health_check():
                 profiles_count=0,
             ).model_dump(),
         )
+
+
+@app.websocket("/vnc/ws")
+async def vnc_websocket_proxy(websocket: WebSocket):
+    """Bridge noVNC WebSocket connection to the local x11vnc server on port 5900."""
+    await websocket.accept()
+    try:
+        reader, writer = await asyncio.open_connection("127.0.0.1", 5900)
+    except Exception as exc:
+        logger.warning(f"VNC WebSocket proxy could not connect to VNC server: {exc}")
+        await websocket.close(code=1011)
+        return
+
+    async def ws_to_tcp():
+        try:
+            while True:
+                data = await websocket.receive_bytes()
+                writer.write(data)
+                await writer.drain()
+        except Exception:
+            pass
+
+    async def tcp_to_ws():
+        try:
+            while True:
+                data = await reader.read(8192)
+                if not data:
+                    break
+                await websocket.send_bytes(data)
+        except Exception:
+            pass
+
+    task1 = asyncio.create_task(ws_to_tcp())
+    task2 = asyncio.create_task(tcp_to_ws())
+    _, pending = await asyncio.wait([task1, task2], return_when=asyncio.FIRST_COMPLETED)
+    for task in pending:
+        task.cancel()
+    writer.close()
+    try:
+        await writer.wait_closed()
+    except Exception:
+        pass
+
+
+novnc_dir = Path("/usr/share/novnc")
+if novnc_dir.is_dir():
+    app.mount("/vnc", StaticFiles(directory=str(novnc_dir), html=True), name="novnc")
 
 
 def _webui_dir() -> Path | None:

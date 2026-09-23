@@ -16,12 +16,6 @@ if [ "$DISPLAY" = ":99" ]; then
         echo "Starting x11vnc server on port 5900..."
         x11vnc -display :99 -forever -shared -nopw -rfbport 5900 -bg -o /tmp/x11vnc.log
     fi
-
-    NOVNC_DIR="/usr/share/novnc"
-    if [ -d "$NOVNC_DIR" ] && command -v websockify >/dev/null 2>&1; then
-        echo "Starting noVNC web server on port 6080..."
-        websockify --web="$NOVNC_DIR" 6080 localhost:5900 >/tmp/websockify.log 2>&1 &
-    fi
 fi
 
 exec "$@"

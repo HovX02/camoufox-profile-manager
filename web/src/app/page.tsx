@@ -10,6 +10,7 @@ import {
   Download,
   Ellipsis,
   Globe,
+  Monitor,
   PackageOpen,
   Pencil,
   Play,
@@ -70,6 +71,7 @@ export default function ProfilesPage() {
   const [menuFor, setMenuFor] = useState<string | null>(null)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<Profile | null>(null)
+  const [screenFor, setScreenFor] = useState<Profile | null>(null)
   const [confirm, setConfirm] = useState<null | {
     title: string
     body: string
@@ -765,6 +767,16 @@ export default function ProfilesPage() {
 
                   <td className="py-2.5 pr-5">
                     <div className="flex items-center justify-end gap-1">
+                      {isRunning && (
+                        <button
+                          className="btn btn-default h-7"
+                          onClick={() => setScreenFor(profile)}
+                          title="View live browser screen"
+                        >
+                          <Monitor size={11} />
+                          Screen
+                        </button>
+                      )}
                       <button
                         className="btn btn-default h-7"
                         disabled={isBusy}
@@ -927,6 +939,21 @@ export default function ProfilesPage() {
         onConfirm={runConfirmed}
         onCancel={() => setConfirm(null)}
       />
+
+      <Modal
+        open={screenFor !== null}
+        title={screenFor ? `Live Screen — ${screenFor.name}` : 'Live Screen'}
+        onClose={() => setScreenFor(null)}
+        width={960}
+      >
+        <div className="relative aspect-video w-full overflow-hidden rounded bg-black">
+          <iframe
+            src="/vnc/vnc.html?path=vnc/ws&autoconnect=true&resize=remote&reconnect=true"
+            className="h-full w-full border-0"
+            title="Live Screen Preview"
+          />
+        </div>
+      </Modal>
 
       <Modal
         open={exportOpen}

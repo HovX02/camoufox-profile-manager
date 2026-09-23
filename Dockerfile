@@ -21,7 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     xvfb \
     x11vnc \
     novnc \
-    websockify \
     openbox \
     libgtk-3-0 \
     libasound2 \
@@ -57,7 +56,7 @@ ENV CPM_HOST=0.0.0.0 \
     DISPLAY=:99
 
 VOLUME ["/data"]
-EXPOSE 8000 6080
+EXPOSE 8000
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 
